@@ -1,0 +1,15 @@
+container:
+    dockerfile: .cirrus/Dockerfile
+    cpu: 8
+    memory: 24G
+
+build_task:
+    timeout_in: 120m
+    build_script:
+        - bash build-all.sh -a $CIRRUS_TERMUX_ARCH
+    env:
+        matrix:
+            CIRRUS_TERMUX_ARCH: aarch64
+            CIRRUS_TERMUX_ARCH: arm
+            CIRRUS_TERMUX_ARCH: i686
+            CIRRUS_TERMUX_ARCH: x86_64
