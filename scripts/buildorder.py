@@ -147,7 +147,9 @@ def read_packages_from_directories(directories):
 
 def generate_full_buildorder(pkgs_map):
     "Generate a build order for building all packages."
+    index = 0
     build_order = []
+    build_order_temp = []
 
     # List of all TermuxPackages without dependencies
     leaf_pkgs = [pkg for name, pkg in pkgs_map.items() if not pkg.deps]
@@ -156,7 +158,9 @@ def generate_full_buildorder(pkgs_map):
         die('No package without dependencies - where to start?')
 
     # Sort alphabetically:
-    pkg_queue = sorted(leaf_pkgs, key=lambda p: p.name)
+    pkg_queue = []
+    pkg_queue_temp = []
+    pkg_queue.append(sorted(leaf_pkgs, key=lambda p: p.name))
 
     # Topological sorting
     visited = set()
@@ -168,14 +172,14 @@ def generate_full_buildorder(pkgs_map):
         for subpkg in pkg.subpkgs:
             remaining_deps[subpkg.name] = set(subpkg.deps)
 
-    while pkg_queue:
-        pkg = pkg_queue.pop(0)
+    while pkg_queue[index]:
+        pkg = pkg_queue[index].pop(0)
         if pkg.name in visited:
             continue
 
         # print("Processing {}:".format(pkg.name), pkg.needed_by)
         visited.add(pkg.name)
-        build_order.append(pkg)
+        build_order_temp.append(pkg)
 
         for other_pkg in sorted(pkg.needed_by, key=lambda p: p.name):
             # Remove this pkg from deps
@@ -186,12 +190,20 @@ def generate_full_buildorder(pkgs_map):
             )
 
             if not remaining_deps[other_pkg.name]:  # all deps were already appended?
-                pkg_queue.append(other_pkg)  # should be processed
+                pkg_queue_temp.append(other_pkg)  # should be processed
+        if not pkg_queue[index]:
+            build_order.append(build_order_temp)
+            build_order_temp = []
+            pkg_queue.append(pkg_queue_temp)
+            pkg_queue_temp = []
+            index += 1
 
-    if set(pkgs_map.values()) != set(build_order):
+    build_order_temp = [j for i in build_order for j in i]
+
+    if set(pkgs_map.values()) != set(build_order_temp):
         print("ERROR: Cycle exists. Remaining: ")
         for name, pkg in pkgs_map.items():
-            if pkg not in build_order:
+            if pkg not in build_order_temp:
                 print(name, remaining_deps[name])
 
         sys.exit(1)
@@ -226,11 +238,15 @@ def main():
 
     if full_buildorder:
         build_order = generate_full_buildorder(pkgs_map)
+        for build_order_x in build_order:
+            for pkg in build_order_x:
+                print(pkg.dir, end=" ")
+            print()
     else:
         build_order = generate_target_buildorder(sys.argv[1], pkgs_map)
-
-    for pkg in build_order:
-        print(pkg.dir)
+        for pkg in build_order:
+            print(pkg.dir)
 
 if __name__ == '__main__':
     main()
+

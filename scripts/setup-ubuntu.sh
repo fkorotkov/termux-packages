@@ -9,6 +9,7 @@ PACKAGES+=" bison"
 PACKAGES+=" curl" # Used for fetching sources.
 PACKAGES+=" ed" # Used by bc
 PACKAGES+=" flex"
+PAKCAGES+=" findutils"
 PACKAGES+=" g++-multilib" # Used by nodejs build for 32-bit arches.
 PACKAGES+=" gettext" # Provides 'msgfmt' which the apt build uses.
 PACKAGES+=" g++"

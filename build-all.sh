@@ -3,6 +3,28 @@
 
 set -e -u -o pipefail
 
+build_all_packages() {
+	package=`basename $1`
+	# Check build status (grepping is a bit crude, but it works)
+	if [ -e $BUILDSTATUS_FILE ] && grep "^$package$" $BUILDSTATUS_FILE >/dev/null; then
+		echo "Skipping $package";
+		continue;
+	fi
+
+	echo -n "Building $package... "
+	BUILD_START=`date "+%s"`
+	bash -x $BUILDSCRIPT -a $TERMUX_ARCH -s \
+	        $TERMUX_DEBUG ${TERMUX_DEBDIR+-o $TERMUX_DEBDIR} $package \
+	        > $BUILDALL_DIR/${package}.out 2> $BUILDALL_DIR/${package}.err
+	BUILD_END=`date "+%s"`
+	BUILD_SECONDS=$(( $BUILD_END - $BUILD_START ))
+	echo "done in $BUILD_SECONDS"
+	# Update build status
+	echo "$package" >> "$BUILDSTATUS_FILE"
+}
+
+export -f build_all_packages
+
 # Read settings from .termuxrc if existing
 test -f $HOME/.termuxrc && . $HOME/.termuxrc
 : ${TERMUX_TOPDIR:="$HOME/.termux-build"}
@@ -34,10 +56,15 @@ if [[ ! "$TERMUX_ARCH" =~ ^(all|aarch64|arm|i686|x86_64)$ ]]; then
 	exit 1
 fi
 
-BUILDSCRIPT=`dirname $0`/build-package.sh
-BUILDALL_DIR=$TERMUX_TOPDIR/_buildall-$TERMUX_ARCH
-BUILDORDER_FILE=$BUILDALL_DIR/buildorder.txt
-BUILDSTATUS_FILE=$BUILDALL_DIR/buildstatus.txt
+export BUILDSCRIPT="`dirname $0`/build-package.sh"
+export BUILDALL_DIR="$TERMUX_TOPDIR/_buildall-$TERMUX_ARCH"
+export BUILDORDER_FILE="$BUILDALL_DIR/buildorder.txt"
+export BUILDSTATUS_FILE="$BUILDALL_DIR/buildstatus.txt"
+
+export TERMUX_TOPDIR
+export TERMUX_ARCH
+export TERMUX_DEBUG
+export TERMUX_DEBDIR
 
 if [ -e $BUILDORDER_FILE ]; then
 	echo "Using existing buildorder file: $BUILDORDER_FILE"
@@ -53,25 +80,8 @@ exec >  >(tee -a $BUILDALL_DIR/ALL.out)
 exec 2> >(tee -a $BUILDALL_DIR/ALL.err >&2)
 trap "echo ERROR: See $BUILDALL_DIR/\${package}.err" ERR
 
-for package_path in `cat $BUILDORDER_FILE`; do
-	package=`basename $package_path`
-	# Check build status (grepping is a bit crude, but it works)
-	if [ -e $BUILDSTATUS_FILE ] && grep "^$package\$" $BUILDSTATUS_FILE >/dev/null; then
-		echo "Skipping $package"
-		continue
-	fi
-
-	echo -n "Building $package... "
-	BUILD_START=`date "+%s"`
-	bash -x $BUILDSCRIPT -a $TERMUX_ARCH -s \
-	        $TERMUX_DEBUG ${TERMUX_DEBDIR+-o $TERMUX_DEBDIR} $package \
-	        > $BUILDALL_DIR/${package}.out 2> $BUILDALL_DIR/${package}.err
-	BUILD_END=`date "+%s"`
-	BUILD_SECONDS=$(( $BUILD_END - $BUILD_START ))
-	echo "done in $BUILD_SECONDS"
-
-	# Update build status
-	echo "$package" >> $BUILDSTATUS_FILE
+cat $BUILDORDER_FILE | while read line; do
+	echo $line | xargs -n 1 -P $(nproc) bash -c 'build_all_packages $1' _
 done
 
 # Update build status
