@@ -11,14 +11,14 @@ build_all_packages() {
 		continue;
 	fi
 
-	echo -n "Building $package... "
+	echo "Building $package... "
 	BUILD_START=`date "+%s"`
 	bash -x $BUILDSCRIPT -a $TERMUX_ARCH -s \
 	        $TERMUX_DEBUG ${TERMUX_DEBDIR+-o $TERMUX_DEBDIR} $package \
 	        > $BUILDALL_DIR/${package}.out 2> $BUILDALL_DIR/${package}.err
 	BUILD_END=`date "+%s"`
 	BUILD_SECONDS=$(( $BUILD_END - $BUILD_START ))
-	echo "done in $BUILD_SECONDS"
+	echo -e "\t$package done in $BUILD_SECONDS"
 	# Update build status
 	echo "$package" >> "$BUILDSTATUS_FILE"
 }
