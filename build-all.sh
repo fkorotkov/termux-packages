@@ -10,12 +10,11 @@ build_all_packages() {
 		echo "Skipping $package";
 		continue;
 	fi
-
 	echo "Building $package... "
 	BUILD_START=`date "+%s"`
 	bash -x $BUILDSCRIPT -a $TERMUX_ARCH -s \
-	        $TERMUX_DEBUG ${TERMUX_DEBDIR+-o $TERMUX_DEBDIR} $package \
-	        > $BUILDALL_DIR/${package}.out 2> $BUILDALL_DIR/${package}.err
+        	$TERMUX_DEBUG ${TERMUX_DEBDIR+-o $TERMUX_DEBDIR} $package \
+		> $BUILDALL_DIR/${package}.out 2> $BUILDALL_DIR/${package}.err
 	BUILD_END=`date "+%s"`
 	BUILD_SECONDS=$(( $BUILD_END - $BUILD_START ))
 	echo -e "\t$package done in $BUILD_SECONDS"
@@ -81,7 +80,7 @@ exec 2> >(tee -a $BUILDALL_DIR/ALL.err >&2)
 trap "echo ERROR: See $BUILDALL_DIR/\${package}.err" ERR
 
 cat $BUILDORDER_FILE | while read line; do
-	echo $line | xargs -n 1 -P $(nproc) bash -c 'build_all_packages $1' _
+	echo $line | xargs -n 1 -P $(($(nproc)/2)) bash -c 'build_all_packages $1' _
 done
 
 # Update build status
