@@ -6,7 +6,7 @@ container:
 build_task:
     timeout_in: 120m
     build_script:
-        - bash build-all.sh -a $CIRRUS_TERMUX_ARCH
+        - sudo bash build-all.sh -a $CIRRUS_TERMUX_ARCH
         - ls -l debs
     env:
         matrix:
