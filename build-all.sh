@@ -5,6 +5,7 @@ set -e -u -o pipefail
 
 build_all_packages() {
 	set -e -u -o pipefail
+	trap "echo ERROR:; cat $BUILDALL_DIR/\${package}.err; exit 255" ERR
 	package=`basename $1`
 	# Check build status (grepping is a bit crude, but it works)
 	if [ -e $BUILDSTATUS_FILE ] && grep "^$package$" $BUILDSTATUS_FILE >/dev/null; then
@@ -76,9 +77,10 @@ if [ -e $BUILDSTATUS_FILE ]; then
 	echo "Continuing build-all from: $BUILDSTATUS_FILE"
 fi
 
+trap "echo ERROR found; exit 1" ERR
+
 exec >  >(tee -a $BUILDALL_DIR/ALL.out)
 exec 2> >(tee -a $BUILDALL_DIR/ALL.err >&2)
-trap "echo ERROR: See $BUILDALL_DIR/\${package}.err" ERR
 
 cat $BUILDORDER_FILE | while read line; do
 	echo $line | xargs -n 1 -P $(($(nproc)/2)) bash -c 'build_all_packages $1' _
