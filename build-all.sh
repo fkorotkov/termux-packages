@@ -4,6 +4,7 @@
 set -e -u -o pipefail
 
 build_all_packages() {
+	set -e -u -o pipefail
 	package=`basename $1`
 	# Check build status (grepping is a bit crude, but it works)
 	if [ -e $BUILDSTATUS_FILE ] && grep "^$package$" $BUILDSTATUS_FILE >/dev/null; then
