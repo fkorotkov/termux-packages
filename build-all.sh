@@ -22,6 +22,7 @@ build_all_packages() {
 	echo -e "\t$package done in $BUILD_SECONDS"
 	# Update build status
 	echo "$package" >> "$BUILDSTATUS_FILE"
+	find ${TERMUX_DEBDIR:-debs} -name "${package}*.deb" -exec dpkg --contents {} \;
 }
 
 export -f build_all_packages
