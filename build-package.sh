@@ -103,6 +103,11 @@ termux_setup_rust() {
 		CARGO_TARGET_NAME=$TERMUX_ARCH-linux-android
 	fi
 
+	while [ -f "$TERMUX_COMMON_CACHEDIR/rustb" ]; do
+		echo "Rustup locked"
+		sleep 0.2
+	done
+	echo "Building" > "$TERMUX_COMMON_CACHEDIR/rustb"
 	local ENV_NAME=CARGO_TARGET_${CARGO_TARGET_NAME^^}_LINKER
 	ENV_NAME=${ENV_NAME//-/_}
 	export $ENV_NAME=$CC
@@ -112,6 +117,7 @@ termux_setup_rust() {
 	export PATH=$HOME/.cargo/bin:$PATH
 
 	rustup target add $CARGO_TARGET_NAME
+	rm "$TERMUX_COMMON_CACHEDIR/rustb"
 }
 
 # Utility function to setup a current ninja build system.
