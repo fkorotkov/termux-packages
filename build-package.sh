@@ -1,4 +1,4 @@
-#!/bin/bash
+# !/bin/bash
 # shellcheck disable=SC1117
 
 set -e -o pipefail -u
@@ -490,12 +490,12 @@ termux_step_start_build() {
 	# Ensure folders present (but not $TERMUX_PKG_SRCDIR, it will be created in build)
 	mkdir -p "$TERMUX_COMMON_CACHEDIR" \
 		"$TERMUX_DEBDIR" \
-		 "$TERMUX_PKG_BUILDDIR" \
-		 "$TERMUX_PKG_PACKAGEDIR" \
-		 "$TERMUX_PKG_TMPDIR" \
-		 "$TERMUX_PKG_CACHEDIR" \
-		 "$TERMUX_PKG_MASSAGEDIR" \
-		 $TERMUX_PREFIX/{bin,etc,lib,libexec,share,tmp,include}
+		"$TERMUX_PKG_BUILDDIR" \
+		"$TERMUX_PKG_PACKAGEDIR" \
+		"$TERMUX_PKG_TMPDIR" \
+		"$TERMUX_PKG_CACHEDIR" \
+		"$TERMUX_PKG_MASSAGEDIR" \
+		$TERMUX_PREFIX/{bin,etc,lib,libexec,share,tmp,include}
 
 	# Make $TERMUX_PREFIX/bin/sh executable on the builder, so that build
 	# scripts can assume that it works on both builder and host later on:
@@ -532,12 +532,15 @@ termux_step_start_build() {
 		Libs: -lz
 	HERE
 
-	# Keep track of when build started so we can see what files have been created.
-	# We start by sleeping so that any generated files above (such as zlib.pc) get
-	# an older timestamp than the TERMUX_BUILD_TS_FILE.
-	sleep 1
-	TERMUX_BUILD_TS_FILE=$TERMUX_PKG_TMPDIR/timestamp_$TERMUX_PKG_NAME
-	touch "$TERMUX_BUILD_TS_FILE"
+	# Change uid so we can see what files have been created.
+	export TERMUX_PKG_UID=$((2000+`ls packages | tr '-' '_' | grep -nw ${TERMUX_PKG_NAME//-/_} | cut -d ':' -f 1`))
+	export TERMUX_PKG_USERNAME=builder-${TERMUX_PKG_NAME//+/plus}
+	adduser --uid $TERMUX_PKG_UID \
+		--gid `id -g` \
+		--shell=/bin/sh \
+		--disabled-password \
+		--gecos "" \
+		$TERMUX_PKG_USERNAME
 }
 
 # Run just after sourcing $TERMUX_PKG_BUILDER_SCRIPT. May be overridden by packages.
@@ -1079,9 +1082,10 @@ termux_step_extract_into_massagedir() {
 
 	# Build diff tar with what has changed during the build:
 	cd $TERMUX_PREFIX
-	tar -N "$TERMUX_BUILD_TS_FILE" \
-		--exclude='lib/libc++_shared.so' --exclude='lib/libstdc++.so' \
-		-czf "$TARBALL_ORIG" .
+	find . -uid $TERMUX_PKG_UID | \
+		tar \
+			--exclude='lib/libc++_shared.so' --exclude='lib/libstdc++.so' \
+			-czf "$TARBALL_ORIG" -T -
 
 	# Extract tar in order to massage it
 	mkdir -p "$TERMUX_PKG_MASSAGEDIR/$TERMUX_PREFIX"
@@ -1336,6 +1340,7 @@ termux_step_handle_buildarch
 termux_step_start_build
 termux_step_extract_package
 cd "$TERMUX_PKG_SRCDIR"
+sudo -E -u \#$TERMUX_PKG_UID bash
 termux_step_post_extract_package
 termux_step_handle_hostbuild
 termux_step_setup_toolchain
@@ -1354,6 +1359,7 @@ termux_step_make_install
 cd "$TERMUX_PKG_BUILDDIR"
 termux_step_post_make_install
 cd "$TERMUX_PKG_MASSAGEDIR"
+exit
 termux_step_extract_into_massagedir
 cd "$TERMUX_PKG_MASSAGEDIR"
 termux_step_massage

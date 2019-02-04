@@ -39,6 +39,8 @@ PACKAGES+=" libjpeg-dev" # Needed by ghostscript
 PACKAGES+=" gawk" # Needed by apr-util
 PACKAGES+=" libssl-dev" # Needed to build Rust
 
+umask 0002
+
 sudo DEBIAN_FRONTEND=noninteractive \
 	apt-get install -yq --no-install-recommends $PACKAGES
 
