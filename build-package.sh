@@ -523,14 +523,18 @@ termux_step_start_build() {
 	# Avoid exporting PKG_CONFIG_LIBDIR until after termux_step_host_build.
 	export TERMUX_PKG_CONFIG_LIBDIR=$TERMUX_PREFIX/lib/pkgconfig
 	# Add a pkg-config file for the system zlib.
+	ZLIB_CONFIG_HASH=$TERMUX_COMMON_CACHEDIR/zlib-pc-hash
 	mkdir -p "$TERMUX_PKG_CONFIG_LIBDIR"
-	cat > "$TERMUX_PKG_CONFIG_LIBDIR/zlib.pc" <<-HERE
-		Name: zlib
-		Description: zlib compression library
-		Version: 1.2.8
-		Requires:
-		Libs: -lz
-	HERE
+	if [ ! -f "$ZLIB_CONFIG_HASH" ] || ! sha256sum --status -c "$ZLIB_CONFIG_HASH"; then
+		cat > "$TERMUX_PKG_CONFIG_LIBDIR/zlib.pc" <<-HERE
+			Name: zlib
+			Description: zlib compression library
+			Version: 1.2.8
+			Requires:
+			Libs: -lz
+		HERE
+		sha256sum "$TERMUX_PKG_CONFIG_LIBDIR/zlib.pc" > "$ZLIB_CONFIG_HASH"
+	fi
 
 	# Change uid so we can see what files have been created.
 	export TERMUX_PKG_UID=$((2000+`ls packages | tr '-' '_' | grep -nw ${TERMUX_PKG_NAME//-/_} | cut -d ':' -f 1`))
@@ -540,6 +544,7 @@ termux_step_start_build() {
 		--shell=/bin/sh \
 		--disabled-password \
 		--gecos "" \
+		--force-badname \
 		$TERMUX_PKG_USERNAME
 }
 
@@ -814,14 +819,18 @@ termux_step_setup_toolchain() {
 	# avoid picking up a cross-compiled pkg-config later on.
 	local _HOST_PKGCONFIG
 	_HOST_PKGCONFIG=$(which pkg-config)
+	PKG_CONFIG_HASH=$TERMUX_COMMON_CACHEDIR/pkg-config-hash
 	mkdir -p $TERMUX_STANDALONE_TOOLCHAIN/bin "$PKG_CONFIG_LIBDIR"
-	cat > "$PKG_CONFIG" <<-HERE
-		#!/bin/sh
-		export PKG_CONFIG_DIR=
-		export PKG_CONFIG_LIBDIR=$PKG_CONFIG_LIBDIR
-		exec $_HOST_PKGCONFIG "\$@"
-	HERE
-	chmod +x "$PKG_CONFIG"
+	if [ ! -f "$PKG_CONFIG_HASH" ] || ! sha256sum --status -c "$PKG_CONFIG_HASH"; then
+		cat > "$PKG_CONFIG" <<-HERE
+			#!/bin/sh
+			export PKG_CONFIG_DIR=
+			export PKG_CONFIG_LIBDIR=$PKG_CONFIG_LIBDIR
+			exec $_HOST_PKGCONFIG "\$@"
+		HERE
+		chmod +x "$PKG_CONFIG"
+		sha256sum "$PKG_CONFIG" > "$PKG_CONFIG_HASH"
+	fi
 }
 
 # Apply all *.patch files for the package. Not to be overridden by packages.
