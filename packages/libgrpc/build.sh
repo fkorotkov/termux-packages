@@ -63,7 +63,7 @@ termux_step_host_build () {
 	# memset(c, 0, sizeof(grpc_oauth2_token_fetcher_credentials));
 	# when building version 1.17.2:
 	CPPFLAGS="-Wno-error=class-memaccess" \
-		CFLAGS="-Wno-implicit-fallthrough" \
+		CFLAGS="-Wno-implicit-fallthrough -Wno-error=class-memaccess" \
 		make -j $TERMUX_MAKE_PROCESSES \
 		HAS_SYSTEM_PROTOBUF=false \
 		prefix=$TERMUX_PKG_HOSTBUILD_DIR \
