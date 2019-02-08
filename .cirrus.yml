@@ -5,6 +5,7 @@ container:
     
 env:
     TERM: xterm
+    COLORTERM: xterm
     ANSI_GREEN: \033[32;1m
     ANSI_RESET: \033[0m
     ANSI_YELLOW: \033[33;1m
@@ -19,7 +20,4 @@ build_task:
         - ls -l debs
     env:
         matrix:
-            CIRRUS_TERMUX_ARCH: aarch64
-            CIRRUS_TERMUX_ARCH: arm
-            CIRRUS_TERMUX_ARCH: i686
             CIRRUS_TERMUX_ARCH: x86_64
