@@ -5,6 +5,7 @@ container:
 
 build_task:
     timeout_in: 120m
+    printenv_script: printenv
     build_script:
         - sudo bash build-package.sh -a $CIRRUS_TERMUX_ARCH libandroid-support
         - ls -l debs
