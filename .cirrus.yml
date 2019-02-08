@@ -2,6 +2,9 @@ container:
     dockerfile: .cirrus/Dockerfile
     cpu: 8
     memory: 24G
+    
+env:
+    TERM: xterm
 
 build_task:
     timeout_in: 120m
