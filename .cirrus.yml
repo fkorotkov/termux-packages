@@ -5,6 +5,11 @@ container:
     
 env:
     TERM: xterm
+    ANSI_GREEN: \033[32;1m
+    ANSI_RESET: \033[0m
+    ANSI_YELLOW: \033[33;1m
+    ANSI_CLEAR: \033[0K
+    ANSI_RED: \033[31;1m
 
 build_task:
     timeout_in: 120m
