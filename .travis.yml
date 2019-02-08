@@ -2,7 +2,7 @@ language: ruby
 sudo: required
 cache: bundler
 services: docker
-before_script: mkdir debs && chmod 777 debs && printenv
+before_script: mkdir debs && chmod 777 debs && printenv | sort
 env:
     - TRAVIS_ARCH=aarch64
     - TRAVIS_ARCH=arm
